@@ -10,7 +10,7 @@ LibreOffice-Dokument für komfortable Buchhaltung besonders für gemeinnützige 
 # Makros
 Das LibreOffice-Calc-Dokument enthält zwei Makros:
 
-## Konto-Import
+## KontoImport
 Zunächst benötigst du den Kontoauszug des Vereinskontos im CSV-Format (sollte Standard bei allen Banken sein). Diese Zeilen kopierst du in den Reiter "Konto_Roh".
 Das Makro macht nun folgendes:
 1. Zeile für Zeile übernehmen und in den ersten Reiter "Girokonto" übertragen
@@ -19,7 +19,7 @@ Das Makro macht nun folgendes:
 
 Wie genau die CSV-Datei für den Kontoauszug aufgebaut ist, kann sich von Bank zu Bank etwas unterscheiden. Das heißt hier müssen ggf. kleine Anpassungen vorgenommen werden, damit das Makro funktioniert.
 
-## Spender-Aufbereitung
+## AufbereitungSpendenbescheinigung
 Dieses Makro arbeitet die erhaltenen Spenden so auf, dass danach einfach per Serienbrief die Spendenbescheinigungen für alle Spender erstellt werden können.
 Die erhaltenen Spenden müssen dabei nach Spender gruppiert und dann "horizontal" aufgeschrieben werden, also auf viele Spalten verteilt.
 Es gibt dann im Reiter "Spender" eine Spalte für das Datum der ersten Spende, den Betrag der ersten Spende, das Datum der zweiten Spende, den Betrag der zweiten Spende usw.
