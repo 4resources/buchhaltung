@@ -2,78 +2,78 @@ REM  *****  BASIC  *****
 Option Explicit
 Sub AufbereitungSpendenbescheinigung
 	ThisComponent.getSheets() 'Auswahl aller Blätter
-	REM *****Deklarierung aller Variablen******
-	Dim KontoRoh 'Zum Auswählen des Reiters kontoroh
-	Dim GiroKonto 'Zum Auswählen des Reiters Girokonto
-	Dim Regeln 'Zum Auswählen des Reiters Regeln
-	Dim i As Integer 'Laufende Variable um die Spendernummern von oben nach unten zu durchlaufen.'
-	Dim x As Integer 'Laufende Variable um Datum und Betrag von links nach rechts zu durchlaufen um keine Werte zu überschreiben.
-	Dim z As Integer 'Laufende Variable, die die Spendernamen durchläuft, aber nur im Sonderfall, wenn keine Spendernummer gefunden wurde.
-	Dim NamenTest 'Enthält den Spendernamen
-	Dim Spender 'Zum Auswählen des Reiters Spender
-	Dim GiroZeilenZahl 'Laufende Variable Für die Do While-Schleife zum Zählen der vorhandenen Einträge im Girokonto
-	Dim EintragungSpenderErfolgt
-	Dim SpenderNummerNachtragung
+
+	REM Variablen für die einzelnen Reiter
+	Dim GiroKonto, Spender
+	
+	REM Anzahl der Kopfzeilen (die dann ignoriert werden) in den verschiedenen Reitern
 	Const GiroKopfZeilen = 5
-	Const RegelnKopfZeilen = 1
 	Const SpenderKopfZeilen = 1
-	Const KontoRohKopfZeilen = 5
+	Const SpenderNameSpalte = 2       'Spendername ist in Spalte C in Reiter Spender
+	Const SpenderAnfangsSpalten = 11  'Anzahl der Spalten im Reiter Spender, die wir ignorieren -> erstes Datum landet in Spalte L, erster Betrag in Spalte M
+	Const KontierungsnummerSpalte = 8 'Kontierungsnummer ist in Spalte I in Reiter Girokonto
+	Const SpendernummerSpalte = 10    'Spendernummer ist in Spalte K in Reiter Girokonto
+	Const DatumSpalte = 1             'Datum ist in Spalte B in Reiter Girokonto
+	Const GegenparteiSpalte = 3       'Gegenpartei ist in Spalte D in Reiter Girokonto
+	Const BetragSpalte = 4            'Betrag ist in Spalte E in Reiter Girokonto
+	REM Wir gehen davon aus, dass Spendernummer in Spalte A von Reiter Spender ist
 
-	REM ******Vorbereitungen für die Schleifen******
+	Dim GiroZeile as Integer, SpenderZeile as Integer, SpenderSpalte as Integer 'Zählvariablen für die verschiedenen Schleifen
+	Dim EintragungSpenderErfolgt as Boolean
+	Dim SpenderNummerNachtragung as Boolean
 
-	KontoRoh = thisComponent.sheets.getByName("Konto_Roh") 'Tabellenblatt Kontoroh ausgewählt
 	GiroKonto = thisComponent.sheets.getByName("Girokonto") 'Tabellenblatt Girokonto ausgewählt
-	Regeln = thisComponent.sheets.getByName("Regeln") 'Tabellenblatt Regeln ausgewählt
 	Spender = thisComponent.sheets.getByName("Spender") 'Tabellenblatt Spender ausgewählt
 
-	REM ******Eine Do While-Schleife um Girokonto durchzugehen und auf Kontierungsnummer 3220 zu prüfen******
-	GiroZeilenZahl = 0
+	REM Schleife, um Girokonto durchzugehen und auf Kontierungsnummer 3220 (=Spende) zu prüfen
+	GiroZeile = GiroKopfZeilen
 
-	Do While GiroKonto.getCellByPosition(1,GiroKopfZeilen+GiroZeilenZahl).getType() <> EMPTY 'läuft solange die Datumzelle einen Wert hat.
+	Do While GiroKonto.getCellByPosition(1,GiroZeile).getType() <> EMPTY 'läuft solange die Datumzelle einen Wert hat.
 		EintragungSpenderErfolgt = False 'Schleifen werden abbgebrochen wenn der Wert später True wird.
 		SpenderNummerNachtragung = False 'Wenn der Wert später True wird muss die Schleife den vorigen Durchlauf nochmal durchlaufen.
-		If GiroKonto.getCellByPosition(8,GiroKopfZeilen+GiroZeilenZahl).String = "3220" Then 'Wenn die Kontierungsnummer=3220 ist dann...
-			i = 0 'Laufende Variable um die Spendernummern von oben nach unten zu durchlaufen. Wird vor jedem durchgang genullt.'
-			REM ******Do While Schleife in Ebene 2. Sie geht die Spendernummern von oben nach unten durch.******
-			Do While Spender.getCellByPosition(1,SpenderKopfZeilen+i).getType() <> EMPTY 'Läuft solange ein Name gefunden wird.'
-				If Spender.getCellByPosition(0,SpenderKopfZeilen+i).Value = GiroKonto.getCellByPosition(10,GiroKopfZeilen+GiroZeilenZahl).Value Then 'Wenn die Spendernummern übereinstimmen:'
-					x=0 'Laufende Variable um Datum und Betrag von links nach rechts zu durchlaufen um keine Werte zu überschreiben. Wird vor jedem durchgang genullt.
-					REM ******Do While Schleife in Ebene 3. Sie geht die Bereits eingetragenen Datums und Beträge von links nach rechts durch.******
-					Do While Spender.getCellByPosition(9+2*x,SpenderKopfZeilen+i).getType() <> EMPTY 'Solange ein Wert in den Datum-Spalten steht:'
-						x= x + 1 'Erhöhe x um einen Schritt.'
+		If GiroKonto.getCellByPosition(KontierungsnummerSpalte,GiroZeile).String = "3220" Then
+			REM Haben eine Zeile mit einer Spende gefunden. Gehen jetzt durch die Spender durch, um Eintrag mit passender Spendernummer zu finden
+			SpenderZeile = SpenderKopfZeilen
+			Do While Spender.getCellByPosition(0,SpenderZeile).getType() <> EMPTY 'Läuft solange eine Spendernummer gefunden wird.
+				If Spender.getCellByPosition(0,SpenderZeile).Value = GiroKonto.getCellByPosition(SpendernummerSpalte,GiroZeile).Value Then
+					REM Haben entsprechenden Spender gefunden. Nun in dieser Zeile die Spalten nach rechts durchgehen, bis wir leeres Feld finden
+					SpenderSpalte = SpenderAnfangsSpalten
+					Do While Spender.getCellByPosition(SpenderSpalte,SpenderZeile).getType() <> EMPTY 'Solange ein Wert in den Datum-Spalten steht:'
+						SpenderSpalte = SpenderSpalte + 2
 					Loop
-					Spender.getCellByPosition(9+2*x,SpenderKopfZeilen+i).String = GiroKonto.getCellByPosition(1,GiroKopfZeilen+GiroZeilenZahl).String 'Trage Datum als String ein.
-					Spender.getCellByPosition(10+2*x,SpenderKopfZeilen+i).Value = GiroKonto.getCellByPosition(4,GiroKopfZeilen+GiroZeilenZahl).Value 'Trage Betrag als Wert ein.
+					REM Haben nun leere Spalte gefunden: Datum und Betrag schreiben
+					Spender.getCellByPosition(SpenderSpalte,SpenderZeile).String = GiroKonto.getCellByPosition(DatumSpalte,GiroZeile).String
+					Spender.getCellByPosition(SpenderSpalte+1,SpenderZeile).Value = GiroKonto.getCellByPosition(BetragSpalte,GiroZeile).Value
 					EintragungSpenderErfolgt = True
-				End If
-				If EintragungSpenderErfolgt = True Then
 					Exit Do
 				End If
-				i = i + 1 'Erhöhe i um einen Schritt.'
+				SpenderZeile = SpenderZeile + 1
 			Loop
 			If EintragungSpenderErfolgt = False Then 'Wenn die Eintragung erfolgt ist können wir uns die weiteren Schritte sparen.
-				REM ******Sonderfall wenn keine Spendernummer gefunden wurde. Prüfung, ob auch der Name nicht in der Liste ist.
-				NamenTest = False
-				z=0
-				Do While Spender.getCellByPosition(1,SpenderKopfZeilen+z).getType() <> EMPTY 'Prüft, ob der Name in der Spenderliste ist.'
-					If Spender.getCellByPosition(1,SpenderKopfZeilen+z).String = GiroKonto.getCellByPosition(3,GiroKopfZeilen+GiroZeilenZahl).String Then
-						NamenTest = True
+				Dim SpendernameGefunden as Boolean
+				Dim SpenderTempZeile As Integer 'Laufende Variable, die die Spender durchläuft, aber nur im Sonderfall, wenn keine Spendernummer gefunden wurde.
+				REM Sonderfall wenn keine Spendernummer gefunden wurde. Prüfung, ob auch der Name nicht in der Liste ist.
+				SpendernameGefunden = False
+				SpenderTempZeile = SpenderKopfZeilen
+				Do While Spender.getCellByPosition(0,SpenderTempZeile).getType() <> EMPTY 'Gehe nocheinmal durch alle Spender durch
+					If Spender.getCellByPosition(SpenderNameSpalte,SpenderTempZeile).String = GiroKonto.getCellByPosition(GegenparteiSpalte,GiroZeile).String Then
+						SpendernameGefunden = True
 					End If
-					z=z+1
+					SpenderTempZeile = SpenderTempZeile + 1
 				Loop
-				If NamenTest = False Then
-					Msgbox(GiroKonto.getCellByPosition(3,GiroKopfZeilen+GiroZeilenZahl).String & " hat noch keine Spendernummer in der Liste. Die Spendernummer wird nun erzeugt und Spenden Werte nachgetragen. Bitte nachkontrollieren.")
-					Spender.getCellByPosition(0,SpenderKopfZeilen+i).Value = i+1 'Neue Spendernummer in Spenderliste eintragen.
-					Spender.getCellByPosition(1,SpenderKopfZeilen+i).String = GiroKonto.getCellByPosition(3,GiroKopfZeilen+GiroZeilenZahl).String 'Namen in Spenderliste eintragen.
-					GiroKonto.getCellByPosition(10,GiroKopfZeilen+GiroZeilenZahl).Value = i+1 'Neue Spendernummer im Reiter Girokonto eintragen.
+				If SpendernameGefunden = False Then
+					Msgbox(GiroKonto.getCellByPosition(GegenparteiSpalte,GiroZeile).String & " hat noch keine Spendernummer in der Liste. Die Spendernummer wird nun erzeugt und Spenden Werte nachgetragen. Bitte nachkontrollieren.")
+					Spender.getCellByPosition(0,SpenderTempZeile).Value = SpenderTempZeile+1 'Neue Spendernummer in Spenderliste eintragen.
+					Spender.getCellByPosition(SpenderNameSpalte,SpenderTempZeile).String = GiroKonto.getCellByPosition(GegenparteiSpalte,GiroZeile).String 'Namen in Spenderliste eintragen.
+					GiroKonto.getCellByPosition(SpendernummerSpalte,GiroZeile).Value = SpenderTempZeile+1 'Neue Spendernummer im Reiter Girokonto eintragen.
 					SpenderNummerNachtragung = True
 				Else
-					Msgbox("Zeile: " & GiroZeilenZahl + 6 & " Spendernummer: " & GiroKonto.getCellByPosition(10,GiroKopfZeilen+GiroZeilenZahl).Value & " - " & GiroKonto.getCellByPosition(3,GiroKopfZeilen+GiroZeilenZahl).String & " hat noch keine Spendernummer in der Liste. Aber der Name befindet sich in der Spenderliste. Hier stimmt etwas nicht. Bitte manuell nachprüfen.")
+					Msgbox("Reiter Girokonto, Zeile: " & GiroZeile & ", Spendernummer: " & GiroKonto.getCellByPosition(SpendernummerSpalte,GiroZeile).Value & " - " & GiroKonto.getCellByPosition(GegenparteiSpalte,GiroZeile).String & " hat noch keine Spendernummer in der Liste. Aber der Name befindet sich in der Spenderliste. Hier stimmt etwas nicht. Bitte manuell korrigieren und dann Makro nochmal laufen lassen.")
 				End If
 			End If
 		End If
-		If SpenderNummerNachtragung = False Then 'Wenn dieser Wert True wäre, dann müsste die erste Schleife nochmal ohne Girozeilnzahl-Erhöhung durchlaufen werden.
-			GiroZeilenZahl = GiroZeilenZahl + 1 'Girzeilenzahl wird um einen Schritt erhöht.'
+		If SpenderNummerNachtragung = False Then 'Normalerweise zählen wir immer den Zählen eins hoch, um Schritt für Schritt durch Reiter Girokonto zu gehen. Außer es gab noch gar keinen passenden Eintrag im Reiter Spender. In dem Fall wurde gerade erst der Eintrag angelegt und nun müssen wir nochmal dieselbe Zeile durchgehen, damit sie diesmal verarbeitet werden kann. TODO nicht sehr elegant, besser durch Nutzung von Funktionen lösen
+			GiroZeile = GiroZeile + 1
 		End If
 	Loop
 End Sub
